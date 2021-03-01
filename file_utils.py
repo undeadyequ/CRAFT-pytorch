@@ -74,3 +74,66 @@ def saveResult(img_file, img, boxes, dirname='./result/', verticals=None, texts=
         # Save result image
         cv2.imwrite(res_img_file, img)
 
+
+def extract_bboxes_feature(bboxes):
+    """
+    bboxes : np([bboxex_num, 4])
+    :param bboxes:
+    :return:
+    """
+    num_bbox = len(bboxes)
+    b_width_sum = 0
+    b_heigth_sum = 0
+    for i, b in enumerate(bboxes):
+        b_width = abs(b[0][0] - b[2][0])
+        b_heigth = abs(b[0][1] - b[2][1])
+        b_width_sum += b_width
+        b_heigth_sum += b_heigth
+    return [num_bbox, b_width_sum / max(num_bbox, 1),
+                         b_heigth_sum / max(num_bbox, 1)]
+
+
+def saveResult_fts(img_file, img, boxes, dirname='./result/', feats_file="./result_fts.txt", verticals=None, texts=None):
+        """ save text detection result one by one
+        Args:
+            img_file (str): image file name
+            img (array): raw image context
+            boxes (array): array of result file
+                Shape: [num_detections, 4] for BB output / [num_detections, 4] for QUAD output
+        Return:
+            None
+        """
+        img = np.array(img)
+
+        # make result file list
+        filename, file_ext = os.path.splitext(os.path.basename(img_file))
+
+        # result directory
+        res_file = dirname + "res_" + filename + '.txt'
+        res_img_file = dirname + "res_" + filename + '.jpg'
+
+        if not os.path.isdir(dirname):
+            os.mkdir(dirname)
+
+        with open(res_file, 'w') as f:
+            for i, box in enumerate(boxes):
+                poly = np.array(box).astype(np.int32).reshape((-1))
+                strResult = filename + "," + ','.join([str(p) for p in poly]) + '\r\n'
+                f.write(strResult)
+
+                poly = poly.reshape(-1, 2)
+                cv2.polylines(img, [poly.reshape((-1, 1, 2))], True, color=(0, 0, 255), thickness=2)
+                ptColor = (0, 255, 255)
+                if verticals is not None:
+                    if verticals[i]:
+                        ptColor = (255, 0, 0)
+
+                if texts is not None:
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    font_scale = 0.5
+                    cv2.putText(img, "{}".format(texts[i]), (poly[0][0]+1, poly[0][1]+1), font, font_scale, (0, 0, 0), thickness=1)
+                    cv2.putText(img, "{}".format(texts[i]), tuple(poly[0]), font, font_scale, (0, 255, 255), thickness=1)
+
+        # Save result image
+        cv2.imwrite(res_img_file, img)
+

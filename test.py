@@ -155,6 +155,8 @@ if __name__ == '__main__':
     t = time.time()
 
     # load data
+    polys_fts_ls = []
+    file_name_ls = []
     for k, image_path in enumerate(image_list):
         print("Test image {:d}/{:d}: {:s}".format(k+1, len(image_list), image_path), end='\r')
         image = imgproc.loadImage(image_path)
@@ -163,9 +165,18 @@ if __name__ == '__main__':
 
         # save score text
         filename, file_ext = os.path.splitext(os.path.basename(image_path))
+        file_name_ls.append(filename)
         mask_file = result_folder + "/res_" + filename + '_mask.jpg'
         cv2.imwrite(mask_file, score_text)
 
         file_utils.saveResult(image_path, image[:,:,::-1], polys, dirname=result_folder)
+
+        polys_fts = file_utils.extract_bboxes_feature(polys)
+        polys_fts_ls.append(polys_fts)
+
+    with open("result.txt", "w") as f:
+        for i, p in enumerate(polys_fts_ls):
+            p_str = [str(item) for item in p]
+            f.write(file_name_ls[i] + "," + ",".join(p_str) + "\n")
 
     print("elapsed time : {}s".format(time.time() - t))
